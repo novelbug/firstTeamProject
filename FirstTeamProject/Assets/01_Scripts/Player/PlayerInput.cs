@@ -24,6 +24,7 @@ public class PlayerInput : MonoBehaviour
     };
 
     public Action<Dir> OnMove;
+    public Action OnStopRotate;
 
     private void Update()
     {
@@ -34,10 +35,7 @@ public class PlayerInput : MonoBehaviour
                 OnMove?.Invoke(KeyToDir[k]);
             }
         }
-    }
 
-    private IEnumerator Moving()
-    {
-        yield return new WaitForSeconds(0.5f);
+        if (Input.GetKeyUp(InputKeys[4])) OnStopRotate?.Invoke();
     }
 }
