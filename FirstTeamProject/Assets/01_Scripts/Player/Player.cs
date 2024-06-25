@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 using UnityEngine.UI;
 
 public class Player : MonoBehaviour
 {
+    [SerializeField] private Tilemap groundTilemap;
     [SerializeField] private Slider turningGaugeSlider;
 
     public GroundTile standingGround = null;
@@ -32,6 +34,7 @@ public class Player : MonoBehaviour
         //  _characterController = GetComponent<CharacterController>();
 
         _playerInput.OnStopRotate += HandleOnStopTurning;
+        _playerMove.OnMove += HandleOnMove;
     }
 
     private void Update()
@@ -62,5 +65,10 @@ public class Player : MonoBehaviour
     private void HandleOnStopTurning()
     {
         turningGaugeSlider.value = turningGauge;
+    }
+
+    private void HandleOnMove(Vector3Int dir)
+    {
+
     }
 }

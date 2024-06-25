@@ -22,6 +22,8 @@ public class PlayerMove : MonoBehaviour
         { Dir.Up, new Vector3Int(0, 1, 0) }
     };
 
+    public Action<Vector3Int> OnMove;
+
     private PlayerInput _playerInput;
     private Rigidbody _rigidbody;
 
@@ -50,6 +52,7 @@ public class PlayerMove : MonoBehaviour
         if(isMoving == false && dir != Dir.Up && isTurning == false)
         {
             isMoving = true;
+            OnMove?.Invoke(DirToVec[dir]);
 
             transform.DOMove(transform.position + DirToVec[dir], 0.25f).SetEase(Ease.OutSine).OnComplete(() =>
             {
