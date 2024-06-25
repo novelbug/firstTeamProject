@@ -30,7 +30,7 @@ public class PlayerInput : MonoBehaviour
     {
         foreach(KeyCode k in InputKeys)
         {
-            if(Input.GetKey(k))
+            if (Input.GetKey(k))
             {
                 OnMove?.Invoke(KeyToDir[k]);
             }

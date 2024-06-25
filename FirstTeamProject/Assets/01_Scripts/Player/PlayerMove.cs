@@ -6,6 +6,8 @@ using DG.Tweening;
 
 public class PlayerMove : MonoBehaviour
 {
+    [SerializeField] private GameObject _playerModeling;
+
     private Player _player;
 
     public bool isMoving = false;
@@ -23,9 +25,12 @@ public class PlayerMove : MonoBehaviour
     };
 
     public Action<Vector3Int> OnMove;
+    public Action OnPlayerStopped;
 
     private PlayerInput _playerInput;
     private Rigidbody _rigidbody;
+
+    private bool _isPlayerDoInput = false;
 
     private void Awake()
     {
@@ -45,27 +50,54 @@ public class PlayerMove : MonoBehaviour
             _rigidbody.useGravity = false;
             transform.DOMoveY(transform.position.y + 1f, 0.75f).SetEase(Ease.OutExpo);
         }
+
+        CheckPlayerStopped();
     }
 
     private void Move(Dir dir)
     {
-        if(isMoving == false && dir != Dir.Up && isTurning == false)
+        if(isTurning == false)
         {
-            isMoving = true;
-            OnMove?.Invoke(DirToVec[dir]);
-
-            transform.DOMove(transform.position + DirToVec[dir], 0.25f).SetEase(Ease.OutSine).OnComplete(() =>
+            if (isMoving == false && dir != Dir.Up)
             {
-                isMoving = false;
-            });
-        }
-        else if(dir == Dir.Up && isTurning == false)
-        {
-            turningTime = 0;
-            isTurning = true;
-        }
+                int dirOnRange = (Mathf.Abs(transform.position.x) >= 4.5f) ? ((transform.position.x > 0) ? 1 : -1) : 0;
+                if (dirOnRange == 0 || (dirOnRange > 0 && dir != Dir.Right) || (dirOnRange < 0 && dir != Dir.Left))
+                {
+                    isMoving = true;
+                    OnMove?.Invoke(DirToVec[dir]);
 
-        Turn(turnSpeed);
+                    if (dir == Dir.Forward) GameManager.Instance.gameScore++;
+                    else if (dir == Dir.Backward) GameManager.Instance.gameScore--;
+
+                    transform.DOMove(transform.position + DirToVec[dir], 0.25f).SetEase(Ease.OutSine).OnComplete(() =>
+                    {
+                        isMoving = false;
+                    });
+                }
+            }
+            else if (dir == Dir.Up)
+            {
+                turningTime = 0;
+                isTurning = true;
+            }
+        }
+        else
+        {
+            Turn(turnSpeed);
+        }
+    }
+
+    private void CheckPlayerStopped()
+    {
+        _isPlayerDoInput = false;
+        foreach (KeyCode k in _playerInput.InputKeys)
+        {
+            if (Input.GetKey(k)) _isPlayerDoInput = true;
+        }
+        _isPlayerDoInput = (isTurning || isMoving) ? true : false;
+
+        if (_isPlayerDoInput == false)
+            OnPlayerStopped?.Invoke();
     }
 
     private void Turn(float speed)
@@ -73,7 +105,7 @@ public class PlayerMove : MonoBehaviour
         if(isTurning)
         {
             turningTime += Time.deltaTime;
-            transform.Rotate(new Vector3(0, 0, speed * turningTime * turningTime * 0.75f + 3f));
+            _playerModeling.transform.Rotate(new Vector3(0, 0, speed * turningTime * turningTime * 0.75f + 3f));
         }
     }
 
@@ -83,7 +115,7 @@ public class PlayerMove : MonoBehaviour
         {
             _rigidbody.useGravity = true;
             isTurning = false;
-            transform.eulerAngles = Vector3.zero;
+            _playerModeling.transform.eulerAngles = Vector3.zero;
         }
     }
 }

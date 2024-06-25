@@ -37,12 +37,21 @@ public class DataManager : MonoBehaviour
         {
             string FromJsonData = File.ReadAllText(filePath);
             data = JsonUtility.FromJson<Data>(FromJsonData);
+
+            GameManager.Instance.playerName = data.PlayerName;
+            GameManager.Instance.gameScore = data.PlayerRecentGameScore;
+            GameManager.Instance.maxGameScore = data.PlayerMaxGameScore;
+
             Console.WriteLine("Load Complete!");
         }
     }
 
     public void SaveGameData()
     {
+        data.PlayerName = GameManager.Instance.playerName;
+        data.PlayerRecentGameScore = GameManager.Instance.gameScore;
+        data.PlayerMaxGameScore = GameManager.Instance.maxGameScore;
+
         string ToJsonData = JsonUtility.ToJson(data, true);
         string filePath = GameDataPath + "/" + GameDataFileName;
 

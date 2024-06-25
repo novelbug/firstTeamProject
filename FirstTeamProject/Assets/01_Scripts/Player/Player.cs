@@ -3,17 +3,22 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using UnityEngine.UI;
+using TMPro;
+using System;
 
 public class Player : MonoBehaviour
 {
-    [SerializeField] private Tilemap groundTilemap;
     [SerializeField] private Slider turningGaugeSlider;
+    [SerializeField] private TextMeshPro warningText;
+    [SerializeField] private Tilemap groundTilemap;
+    [SerializeField] private LayerMask _whatIsGround;
 
     public GroundTile standingGround = null;
 
     private PlayerMove _playerMove;
     private PlayerInput _playerInput;
-    // private CharacterController _characterController;
+
+    TileData tileData;
 
     private RaycastHit hit;
     private float _maxDist = 5f;
@@ -31,10 +36,12 @@ public class Player : MonoBehaviour
     {
         _playerMove = GetComponent<PlayerMove>();
         _playerInput = GetComponent<PlayerInput>();
-        //  _characterController = GetComponent<CharacterController>();
 
         _playerInput.OnStopRotate += HandleOnStopTurning;
         _playerMove.OnMove += HandleOnMove;
+        _playerMove.OnPlayerStopped += HandleOnPlayerStopped;
+
+        tileData = new TileData();
     }
 
     private void Update()
@@ -44,22 +51,34 @@ public class Player : MonoBehaviour
         if (_playerMove.isTurning)
         {
             turningGauge += ((turningGauge == 0) ? 0.1f : turningGauge) * Time.deltaTime * 1.5f;
-            turningGaugeSlider.value = Mathf.Clamp(turningGauge, 0, 10f);
-
-            if(turningGaugeSlider.value >= 9.99f)
-            {
-                _playerInput.OnStopRotate.Invoke();
-            }
         }
-        else turningGauge = 0f;
-
-        if(Physics.Raycast(transform.position, Vector3.down, out hit, _maxDist))
+        else
         {
-            if(hit.collider.gameObject.TryGetComponent(out GroundTile ground))
+            turningGauge -= ((turningGauge == 0) ? 0.1f : turningGauge) * Time.deltaTime * 0.1f;
+        }
+        turningGauge = Mathf.Clamp01(turningGauge);
+        turningGaugeSlider.value = turningGauge;
+
+        if (turningGaugeSlider.value >= 0.99f)
+        {
+            _playerInput.OnStopRotate.Invoke();
+        }
+
+
+
+        if (Physics.Raycast(transform.position, Vector3.down * 3f, out hit))
+        {
+            if (hit.transform.parent.gameObject.TryGetComponent(out GroundTile ground))
             {
                 standingGround = ground;
             }
         }
+
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.DrawRay(transform.position, Vector3.down * 3f);
     }
 
     private void HandleOnStopTurning()
@@ -69,6 +88,37 @@ public class Player : MonoBehaviour
 
     private void HandleOnMove(Vector3Int dir)
     {
+        StopCoroutine("StoppedWarning");
+        warningText.alpha = 0;
+
+        //Vector3Int posInt = Vector3Int.FloorToInt(transform.position) - Vector3Int.down;
+        //TileBase standingTile = groundTilemap.GetTile(posInt);
+        //standingTile.GetTileData(posInt, groundTilemap, ref tileData);
+        //standingGround = tileData.gameObject.GetComponent<GroundTile>();
+    }
+
+    private void HandleOnPlayerStopped()
+    {
+        warningText.alpha = 1;
+        warningText.text = "3";
+
+        StartCoroutine("StoppedWarning");
+    }
+
+    private IEnumerator StoppedWarning()
+    {
+        yield return new WaitForSeconds(1f);
+        warningText.text = "2";
+        yield return new WaitForSeconds(1f);
+        warningText.text = "1";
+        yield return new WaitForSeconds(1f);
+        warningText.text = "0";
+        DropBlockOnPlayer();
+    }
+
+    private void DropBlockOnPlayer()
+    {
+        Debug.LogWarning("Dropped!!!");
 
     }
 }

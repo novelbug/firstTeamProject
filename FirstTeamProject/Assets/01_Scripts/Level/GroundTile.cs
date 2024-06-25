@@ -26,7 +26,7 @@ public class GroundTile : MonoBehaviour
 
     private void Awake()
     {
-        _meshCompo = GetComponent<MeshRenderer>();
+        _meshCompo = GetComponentInChildren<MeshRenderer>();
         _currentMat = _meshCompo.material;
         _player = FindObjectOfType<Player>();
     }
@@ -58,5 +58,11 @@ public class GroundTile : MonoBehaviour
     {
         yield return new WaitForSeconds(Time.deltaTime);
         _changingTime += 0;
+
+        for(int i = 0; i < 400; i++)
+        {
+            Color curColor = _meshCompo.material.color;
+            _meshCompo.material.color += Color.white * 0.01f;
+        }
     }
 }
