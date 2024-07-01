@@ -12,11 +12,13 @@ public class PlayerMove : MonoBehaviour
 
     public bool isMoving = false;
     public bool isTurning = false;
+    public bool canMove = true;
     public float jumpForce = 3f;
     public float turnSpeed = 3f;
     public float turningTime = 0f;
+    public int playerMaxZPos = 0;
 
-    [SerializeField] private float _moveCooldown = 0, _moveCooltime = 0f;
+    [SerializeField] private float _moveCooltime = 2f;
 
     public Dictionary<Dir, Vector3Int> DirToVec = new Dictionary<Dir, Vector3Int> {
         { Dir.Forward, new Vector3Int(0, 0, 1) }, { Dir.Backward, new Vector3Int(0, 0, -1) },
@@ -45,45 +47,41 @@ public class PlayerMove : MonoBehaviour
 
     private void Update()
     {
+        canMove = !GameManager.Instance.isGameStopped && !GameManager.Instance.isGameOver;
+
         if (Input.GetKeyDown(_playerInput.InputKeys[4]) && isTurning == false)
         {
             _rigidbody.useGravity = false;
             transform.DOMoveY(transform.position.y + 1f, 0.75f).SetEase(Ease.OutExpo);
         }
 
+        if (playerMaxZPos < (int)transform.position.z)
+            playerMaxZPos = (int)transform.position.z;
+        GameManager.Instance.gameScore = playerMaxZPos;
+
         CheckPlayerStopped();
     }
 
     private void Move(Dir dir)
     {
-        if(isTurning == false)
+        if(canMove)
         {
-            if (isMoving == false && dir != Dir.Up)
+            if (isTurning == false)
             {
-                int dirOnRange = (Mathf.Abs(transform.position.x) >= 4.5f) ? ((transform.position.x > 0) ? 1 : -1) : 0;
-                if (dirOnRange == 0 || (dirOnRange > 0 && dir != Dir.Right) || (dirOnRange < 0 && dir != Dir.Left))
+                if (isMoving == false && dir != Dir.Up)
                 {
-                    isMoving = true;
-                    OnMove?.Invoke(DirToVec[dir]);
-
-                    if (dir == Dir.Forward) GameManager.Instance.gameScore++;
-                    else if (dir == Dir.Backward) GameManager.Instance.gameScore--;
-
-                    transform.DOMove(transform.position + DirToVec[dir], 0.25f).SetEase(Ease.OutSine).OnComplete(() =>
-                    {
-                        isMoving = false;
-                    });
+                    StartCoroutine("MoveCoroutine", dir);
+                }
+                else if (dir == Dir.Up)
+                {
+                    turningTime = 0;
+                    isTurning = true;
                 }
             }
-            else if (dir == Dir.Up)
+            else
             {
-                turningTime = 0;
-                isTurning = true;
+                Turn(turnSpeed);
             }
-        }
-        else
-        {
-            Turn(turnSpeed);
         }
     }
 
@@ -116,6 +114,28 @@ public class PlayerMove : MonoBehaviour
             _rigidbody.useGravity = true;
             isTurning = false;
             _playerModeling.transform.eulerAngles = Vector3.zero;
+        }
+    }
+
+    private IEnumerator MoveCoroutine(Dir dir)
+    {
+        yield return null;
+
+        if(_player.standingGround != null) _player.standingGround.StopExplode();
+        int dirOnRange = (Mathf.Abs(transform.position.x) >= 4.5f) ? ((transform.position.x > 0) ? 1 : -1) : 0;
+        if ((dirOnRange == 0 || (dirOnRange > 0 && dir != Dir.Right) || (dirOnRange < 0 && dir != Dir.Left)) && !isMoving)
+        {
+            isMoving = true;
+            OnMove?.Invoke(DirToVec[dir]);
+
+            if (dir == Dir.Forward) GameManager.Instance.gameScore++;
+            else if (dir == Dir.Backward) GameManager.Instance.gameScore--;
+
+            transform.DOComplete();
+            transform.DOMove(transform.position + DirToVec[dir], 0.25f).SetEase(Ease.OutSine).OnComplete(() =>
+            {
+                isMoving = false;
+            });
         }
     }
 }

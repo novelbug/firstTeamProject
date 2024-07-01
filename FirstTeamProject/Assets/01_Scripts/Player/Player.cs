@@ -15,13 +15,10 @@ public class Player : MonoBehaviour
 
     public GroundTile standingGround = null;
 
-    private PlayerMove _playerMove;
+    public PlayerMove playerMove;
     private PlayerInput _playerInput;
 
-    TileData tileData;
-
     private RaycastHit hit;
-    private float _maxDist = 5f;
 
     /// <summary>
     /// 돌면서 올라가는 게이지
@@ -34,21 +31,27 @@ public class Player : MonoBehaviour
 
     private void Awake()
     {
-        _playerMove = GetComponent<PlayerMove>();
+        playerMove = GetComponent<PlayerMove>();
         _playerInput = GetComponent<PlayerInput>();
 
         _playerInput.OnStopRotate += HandleOnStopTurning;
-        _playerMove.OnMove += HandleOnMove;
-        _playerMove.OnPlayerStopped += HandleOnPlayerStopped;
+        playerMove.OnMove += HandleOnMove;
+        playerMove.OnPlayerStopped += HandleOnPlayerStopped;
 
-        tileData = new TileData();
+        warningText.text = "3";
+        warningText.alpha = 0;
     }
 
     private void Update()
     {
+        if(this.transform.position.y <= -2.5f)
+        {
+            GameManager.Instance.GameOver(GameOverReasons.Fall);
+        }
+
         // canTurn = (_characterController.isGrounded && !_playerMove.isMoving) ? true : false;
 
-        if (_playerMove.isTurning)
+        if (playerMove.isTurning)
         {
             turningGauge += ((turningGauge == 0) ? 0.1f : turningGauge) * Time.deltaTime * 1.5f;
         }
@@ -64,8 +67,6 @@ public class Player : MonoBehaviour
             _playerInput.OnStopRotate.Invoke();
         }
 
-
-
         if (Physics.Raycast(transform.position, Vector3.down * 3f, out hit))
         {
             if (hit.transform.parent.gameObject.TryGetComponent(out GroundTile ground))
@@ -73,12 +74,6 @@ public class Player : MonoBehaviour
                 standingGround = ground;
             }
         }
-
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.DrawRay(transform.position, Vector3.down * 3f);
     }
 
     private void HandleOnStopTurning()
@@ -101,8 +96,9 @@ public class Player : MonoBehaviour
     {
         warningText.alpha = 1;
         warningText.text = "3";
-
         StartCoroutine("StoppedWarning");
+
+        if(standingGround != null) standingGround.StartExplode();
     }
 
     private IEnumerator StoppedWarning()
@@ -114,11 +110,19 @@ public class Player : MonoBehaviour
         yield return new WaitForSeconds(1f);
         warningText.text = "0";
         DropBlockOnPlayer();
+        StopCoroutine("StoppedWarning");
     }
 
     private void DropBlockOnPlayer()
     {
         Debug.LogWarning("Dropped!!!");
+    }
 
+    private void OnCollisionEnter(Collision collision)
+    {
+        if(collision.gameObject.CompareTag("Obstacle"))
+        {
+            GameManager.Instance.GameOver(GameOverReasons.Obstacle);
+        }
     }
 }

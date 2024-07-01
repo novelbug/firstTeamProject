@@ -1,11 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DG.Tweening;
 
 public class GroundTile : MonoBehaviour
 {
     [SerializeField] private Material colorMat;
-    [SerializeField] private float _changingTime;
 
     private Player _player;
     private Material _currentMat;
@@ -17,6 +17,7 @@ public class GroundTile : MonoBehaviour
     public int distWithPlayer = 0;
     public bool isPlayerTurning = false;
     public float explodeCooldown = 0, explodeCooltime = 12f;
+    public bool isExploding = false;
 
     public GroundTile(Vector3 pos, GameObject tileObj)
     {
@@ -26,7 +27,7 @@ public class GroundTile : MonoBehaviour
 
     private void Awake()
     {
-        _meshCompo = GetComponentInChildren<MeshRenderer>();
+        _meshCompo = transform.GetChild(1).GetComponent<MeshRenderer>();
         _currentMat = _meshCompo.material;
         _player = FindObjectOfType<Player>();
     }
@@ -48,21 +49,34 @@ public class GroundTile : MonoBehaviour
         if (distWithPlayer < -10) gameObject.transform.position += new Vector3Int(0, 0, 60);
     }
 
-    public void Explode()
+    public void StartExplode()
     {
-        _changingTime = 0;
-        StartCoroutine(ColorChange());
+        if(!isExploding) StartCoroutine("ColorChange");
+    }
+
+    public void StopExplode()
+    {
+        if (isExploding) StopCoroutine("ColorChange");
+        _meshCompo.material.DOKill();
+        _meshCompo.material.color = Color.white;
+        isExploding = false;
     }
 
     private IEnumerator ColorChange()
     {
-        yield return new WaitForSeconds(Time.deltaTime);
-        _changingTime += 0;
+        isExploding = true;
 
-        for(int i = 0; i < 400; i++)
+        yield return null;
+        _meshCompo.material.DOColor(Color.red, 4f).OnComplete(() => { Explode(); });
+    }
+
+    public void Explode()
+    {
+        Debug.LogWarning("############### Explode ###############");
+        transform.DOMoveY(transform.position.y - 5f, 0.5f).SetEase(Ease.InQuad).OnComplete(() =>
         {
-            Color curColor = _meshCompo.material.color;
-            _meshCompo.material.color += Color.white * 0.01f;
-        }
+            
+            Destroy(this.gameObject);
+        });
     }
 }

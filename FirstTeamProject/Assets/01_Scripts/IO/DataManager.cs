@@ -38,19 +38,15 @@ public class DataManager : MonoBehaviour
             string FromJsonData = File.ReadAllText(filePath);
             data = JsonUtility.FromJson<Data>(FromJsonData);
 
-            GameManager.Instance.playerName = data.PlayerName;
-            GameManager.Instance.gameScore = data.PlayerRecentGameScore;
-            GameManager.Instance.maxGameScore = data.PlayerMaxGameScore;
-
             Console.WriteLine("Load Complete!");
         }
     }
 
-    public void SaveGameData()
+    public void SaveGameData(string name, int score, int maxScore)
     {
-        data.PlayerName = GameManager.Instance.playerName;
-        data.PlayerRecentGameScore = GameManager.Instance.gameScore;
-        data.PlayerMaxGameScore = GameManager.Instance.maxGameScore;
+        data.PlayerName = name;
+        data.PlayerRecentGameScore = score;
+        data.PlayerMaxGameScore = maxScore;
 
         string ToJsonData = JsonUtility.ToJson(data, true);
         string filePath = GameDataPath + "/" + GameDataFileName;
@@ -58,5 +54,18 @@ public class DataManager : MonoBehaviour
         File.WriteAllText(filePath, ToJsonData);
 
         Console.WriteLine("Save Complete!");
+    }
+
+    private void OnApplicationQuit()
+    {
+        if(GameManager.Instance != null)
+        {
+            SaveGameData(GameManager.Instance.playerName,
+                GameManager.Instance.gameScore, GameManager.Instance.maxGameScore);
+        }
+        else
+        {
+            SaveGameData(data.PlayerName, data.PlayerRecentGameScore, data.PlayerMaxGameScore);
+        }
     }
 }
